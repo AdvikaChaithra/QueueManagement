@@ -8,7 +8,7 @@ A responsive queue management application built for the Rugas Team assignment. A
 - **Backend API:** https://queuemanagement-srmt.onrender.com/api/health
 - **GitHub:** https://github.com/AdvikaChaithra/QueueManagement
 
-**Demo login:** `<your demo email>` / `<your demo password>` (or register a new manager account)
+**Demo login:** `advika@gmail.com` / `advika1234` (or register a new manager account)
 
 > The backend runs on Render's free tier, which sleeps after inactivity. The first request can take up to ~50 seconds to wake it up. Data is stored in SQLite on an ephemeral disk, so it may reset when the service restarts.
 
