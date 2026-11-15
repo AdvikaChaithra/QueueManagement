@@ -1,37 +1,51 @@
-# QueueFlow — Full-stack Queue Management System
+# QueueFlow: Full-stack Queue Management System
 
-A responsive queue management app built for the Rugas Team project brief. Managers can register/login, create multiple queues, add people (with automatically generated sequential token numbers), reorder waiting tokens, call the next person, complete service, cancel tokens, and view queue analytics.
+A responsive queue management application built for the Rugas Team assignment. A manager can log in, create named queues, add people (each gets an auto-generated token), reorder the waiting list, call the next person with one click, cancel tokens, and track wait times and queue length on an analytics dashboard.
+
+## Live demo
+
+- **Frontend:** https://queue-management-murex.vercel.app
+- **Backend API:** https://queuemanagement-srmt.onrender.com/api/health
+- **GitHub:** https://github.com/AdvikaChaithra/QueueManagement
+
+**Demo login:** `<your demo email>` / `<your demo password>` (or register a new manager account)
+
+> The backend runs on Render's free tier, which sleeps after inactivity. The first request can take up to ~50 seconds to wake it up. Data is stored in SQLite on an ephemeral disk, so it may reset when the service restarts.
+
+## Assignment requirements
+
+| # | Requirement | Implementation |
+|---|---|---|
+| 1 | Manager can log in and create queues | Register/login with JWT sessions and bcrypt-hashed passwords; create and delete queues |
+| 2 | Each queue has a name | Required name field, max 60 characters |
+| 3 | Add persons/tokens; a token is created | Adding a person generates a sequential token number (#001, #002, ...) per queue |
+| 4 | Queue displays waiting tokens | Live waiting list with the person in service shown separately, plus search |
+| 5 | Move tokens up and down | Up/down buttons on each waiting token |
+| 6 | Assign the top token for service with one click | "Call next" button; one token is in service at a time and is completed before the next is called |
+| 7 | Cancel a token | Cancel button with confirmation, works for waiting and serving tokens |
+| 8 | Analytics dashboard | Average wait time, queue length trend, completed/cancelled counts, token breakdown and recent activity |
 
 ## Tech stack
 
-- **Frontend:** React 18, Vite, CSS, Recharts, Axios, Lucide React
+- **Frontend:** React 18, Vite, Recharts, Axios, Lucide React
 - **Backend:** Node.js, Express
 - **Database:** SQLite (`better-sqlite3`)
-- **Authentication:** JWT sessions and bcrypt password hashing
-
-## Requirements
-
-- Node.js 18 or newer and npm
-- Git (optional, for GitHub submission)
+- **Authentication:** JWT and bcrypt
 
 ## Run locally
 
-Open two terminals.
+Requires Node.js 18 or newer (20 LTS recommended). Open two terminals.
 
 ### 1. Start the API
 
 ```bash
 cd server
 npm install
-```
-
-Copy `.env.example` to `.env` and set a long random `JWT_SECRET` value. Then:
-
-```bash
+cp .env.example .env        # Windows CMD: copy .env.example .env
 npm run dev
 ```
 
-API runs at `http://localhost:5000`. The SQLite database is automatically created at `server/data/queue_manager.db` on first start.
+Set a long random `JWT_SECRET` in `server/.env`. The API runs at `http://localhost:5000` and creates the SQLite database at `server/data/queue_manager.db` on first start.
 
 ### 2. Start the frontend
 
@@ -43,9 +57,18 @@ npm run dev
 
 Open `http://localhost:5173`, create a manager account, and create your first queue.
 
-## Main API routes
+## Environment variables
 
-All routes except health and register/login require `Authorization: Bearer <JWT>`.
+| Where | Variable | Purpose |
+|---|---|---|
+| server | `JWT_SECRET` | Secret used to sign login tokens |
+| server | `CLIENT_ORIGIN` | Allowed frontend origin for CORS (no trailing slash) |
+| server | `PORT` | API port (default 5000) |
+| client | `VITE_API_URL` | API base URL ending in `/api` (default `http://localhost:5000/api`) |
+
+## API routes
+
+All routes except health, register and login require `Authorization: Bearer <JWT>`.
 
 | Method | Endpoint | Purpose |
 |---|---|---|
@@ -63,36 +86,22 @@ All routes except health and register/login require `Authorization: Bearer <JWT>
 | POST | `/api/tokens/:id/complete` | Complete active service |
 | GET | `/api/queues/:id/analytics` | Queue metrics and recent activity |
 
-## Queue behavior and design decisions
+## Design decisions
 
-- Token numbers increment independently within each queue and are not reused after cancellation.
-- Waiting positions are normalized after a cancellation or service assignment.
-- Only one token may be in service per queue. The manager must complete it before calling the next person.
-- Reordering applies only to waiting tokens; the serving token is kept separate at the top.
-- Average wait time is calculated from token creation to the time service begins, for tokens that have been called.
-- Queue length trends are based on recorded queue events. The trend is a lightweight event-based history, not fabricated sample data.
-- Queue data is scoped to the authenticated manager.
+- Token numbers increment independently within each queue and are never reused after cancellation.
+- Waiting positions are renumbered after a cancellation or when a token is called.
+- Only one token can be in service per queue; the manager completes it before calling the next.
+- Reordering applies only to waiting tokens.
+- Average wait time is the time from token creation to the start of service, for tokens that have been called.
+- The queue length trend comes from recorded queue events (add, call, cancel, complete, reorder), not sample data.
+- Timestamps are stored in UTC and converted to the viewer's local time in the browser.
+- Each manager can only access their own queues and tokens.
 
-## GitHub submission
+## Deployment
 
-From the project root:
+- **Backend (Render):** root directory `server`, build `npm install`, start `npm start`. Set `JWT_SECRET`, `CLIENT_ORIGIN` and `NODE_VERSION=20`.
+- **Frontend (Vercel):** root directory `client`, build `npm run build`, output `dist`. Set `VITE_API_URL` to the Render URL plus `/api`.
 
-```bash
-git init
-git add .
-git commit -m "Build QueueFlow queue management app"
-git branch -M main
-git remote add origin https://github.com/YOUR_USERNAME/queueflow.git
-git push -u origin main
-```
+## Future improvements
 
-Do not commit `server/.env`, `server/data/`, `node_modules/`, or build output. A `.gitignore` is included.
-
-## Before production deployment
-
-Set a strong `JWT_SECRET`, serve the frontend and API over HTTPS, restrict CORS to the deployed frontend origin, add rate limiting and account recovery, and use a managed database with backups. This starter is designed for local evaluation/demo use.
-
-## Deployment notes
-
-- Frontend: set `VITE_API_URL` (see `client/.env.example`) to the deployed API URL ending in `/api`, then run `npm run build`.
-- Backend: set `JWT_SECRET` and `CLIENT_ORIGIN` (the deployed frontend URL). SQLite needs a persistent disk; on hosts with ephemeral storage the data resets on restart.
+Rate limiting, password reset, a managed database (Postgres) for persistent storage, real-time updates via WebSockets, and automated tests.
